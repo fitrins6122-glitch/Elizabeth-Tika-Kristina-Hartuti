@@ -54,7 +54,7 @@
         import { initializeFirestore, collection, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
-        // Konfigurasi dinamis menggunakan akun Firebase baru Anda (elizabeth-tika)
+        // Konfigurasi dinamis dengan Firebase Elizabeth Tika yang baru
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
             apiKey: "AIzaSyC6WgLVIsGm1lDbSKgRnZuMpHro3UqTXkc",
             authDomain: "elizabeth-tika.firebaseapp.com",
@@ -66,7 +66,7 @@
             measurementId: "G-GTWNVSSYT4"
         };
 
-        // Identifikasi ID unik aplikasi untuk pemisahan data koleksi artifacts
+        // Identifikasi ID unik aplikasi untuk pemisahan data koleksi artifacts (Sesuai Aturan Firestore)
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'elizabeth-tika';
 
         let db = null;
@@ -102,7 +102,7 @@
                     }
                 });
             } catch (error) { 
-                console.warn("Koneksi Firebase beralih ke fallback penyimpanan lokal:", error);
+                console.warn("Koneksi Firebase gagal, beralih ke penyimpanan lokal sementara:", error);
                 isUsingFirebase = false;
             }
         };
@@ -153,7 +153,7 @@
 
         const loadPublicRSVP = () => {
             if (!auth || !auth.currentUser) return;
-            // Jalur penyimpanan publik yang aman dan sesuai struktur terisolasi (RULE 1)
+            // Jalur penyimpanan publik terisolasi yang aman (RULE 1)
             const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'rsvp');
             onSnapshot(colRef, (snapshot) => {
                 const docs = [];
@@ -194,7 +194,7 @@
             const rsvpData = {
                 name, 
                 relation: rel, 
-                message: msg || 'Doa terbaik untuk Ibu.', 
+                message: msg || 'Doa terbaik.', 
                 status,
                 timestamp: new Date().toISOString()
             };
