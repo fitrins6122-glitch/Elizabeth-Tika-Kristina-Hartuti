@@ -52,41 +52,32 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { initializeFirestore, collection, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
-        // =========================================================================
-        // SILAKAN SALIN DAN TEMPEL DETAIL KONFIGURASI FIREBASE BARU ANDA DI BAWAH INI:
-        // =========================================================================
-        const firebaseConfig = {
-            apiKey: "MASUKKAN_API_KEY_BARU_DI_SINI",
-            authDomain: "MASUKKAN_AUTH_DOMAIN_BARU_DI_SINI",
-            projectId: "MASUKKAN_PROJECT_ID_BARU_DI_SINI",
-            storageBucket: "MASUKKAN_STORAGE_BUCKET_BARU_DI_SINI",
-            messagingSenderId: "MASUKKAN_SENDER_ID_BARU_DI_SINI",
-            appId: "MASUKKAN_APP_ID_BARU_DI_SINI",
-            measurementId: "MASUKKAN_MEASUREMENT_ID_BARU_DI_SINI"
+        // Konfigurasi dinamis menggunakan akun Firebase baru Anda (elizabeth-tika)
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+            apiKey: "AIzaSyC6WgLVIsGm1lDbSKgRnZuMpHro3UqTXkc",
+            authDomain: "elizabeth-tika.firebaseapp.com",
+            databaseURL: "https://elizabeth-tika-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "elizabeth-tika",
+            storageBucket: "elizabeth-tika.firebasestorage.app",
+            messagingSenderId: "130788929719",
+            appId: "1:130788929719:web:d1c4fe39aae6f236215d32",
+            measurementId: "G-GTWNVSSYT4"
         };
 
-        // Ganti ID unik aplikasi jika Anda inginkan (misal nama database Anda)
-        const appId = "undangan-digital-elizabeth"; 
-        // =========================================================================
+        // Identifikasi ID unik aplikasi untuk pemisahan data koleksi artifacts
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'elizabeth-tika';
 
         let db = null;
         let auth = null;
         let isUsingFirebase = false;
 
         window.firebaseStore = { appId };
-        window.allRSVPData = []; // Menyimpan data tamu rsvp secara global untuk modal pencarian
+        window.allRSVPData = []; // Menyimpan data rsvp tamu secara global
 
         const initFirebase = async () => {
             loadFallbackRSVP();
-
-            // Proteksi otomatis jika konfigurasi masih berupa template kosong bawaan
-            if (!firebaseConfig.apiKey || firebaseConfig.apiKey.includes("MASUKKAN_")) {
-                console.log("Firebase belum diatur. Sistem otomatis beralih ke penyimpanan lokal sementara.");
-                isUsingFirebase = false;
-                return;
-            }
 
             try {
                 const app = initializeApp(firebaseConfig);
@@ -97,7 +88,12 @@
                     useFetchStreams: false
                 });
                 
-                await signInAnonymously(auth);
+                // Aturan Autentikasi ketat sebelum melakukan query database (RULE 3)
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
                 
                 onAuthStateChanged(auth, (user) => {
                     if (user) { 
@@ -106,13 +102,13 @@
                     }
                 });
             } catch (error) { 
-                console.warn("Koneksi Firebase gagal diinisialisasi:", error);
+                console.warn("Koneksi Firebase beralih ke fallback penyimpanan lokal:", error);
                 isUsingFirebase = false;
             }
         };
 
         const renderRSVPList = (docs) => {
-            window.allRSVPData = docs; // Bagikan ke window agar bisa diakses modul modal
+            window.allRSVPData = docs;
             let hadir = 0, ragu = 0, tidak = 0;
             
             const messagesHTML = docs.map(data => {
@@ -150,7 +146,6 @@
                 container.innerHTML = messagesHTML || '<p class="text-[11px] opacity-40 italic py-6 text-center text-white">Belum ada ucapan doa masuk.</p>';
             }
 
-            // Segarkan render tab modal jika sedang terbuka
             if (typeof window.renderGuestTab === 'function') {
                 window.renderGuestTab();
             }
@@ -158,6 +153,7 @@
 
         const loadPublicRSVP = () => {
             if (!auth || !auth.currentUser) return;
+            // Jalur penyimpanan publik yang aman dan sesuai struktur terisolasi (RULE 1)
             const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'rsvp');
             onSnapshot(colRef, (snapshot) => {
                 const docs = [];
@@ -165,6 +161,7 @@
                 docs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
                 renderRSVPList(docs);
             }, (error) => {
+                console.error("Gagal sinkronisasi data Firebase:", error);
                 isUsingFirebase = false;
                 loadFallbackRSVP();
             });
@@ -397,7 +394,7 @@
             overflow-y: auto;
         }
 
-        /* Bingkai Foto 3D - Akselerasi GPU tingkat lanjut */
+        /* Bingkai Foto 3D - Akselerasi GPU */
         .crystal-frame-3d {
             width: 210px; 
             height: 285px; 
@@ -456,7 +453,6 @@
         .corner-bl { bottom: -8px; left: -8px; border-right: none; border-top: none; border-radius: 0 0 0 6px; }
         .corner-br { bottom: -8px; right: -8px; border-left: none; border-top: none; border-radius: 0 0 6px 0; }
 
-        /* Wadah Navigasi Bawah - Akselerasi GPU penuh */
         #nav-container {
             will-change: transform, opacity;
             transform: translate3d(0, 0, 0);
@@ -883,7 +879,6 @@
                 <h3 class="font-playfair text-lg font-bold text-silver mb-6 uppercase tracking-[0.25em] border-b border-silver/20 pb-2 italic">Dewan Akademik</h3>
                 
                 <div class="space-y-4">
-                    <!-- Bingkai Baru yang Diedit Lebih Mewah dengan Siku Perak -->
                     <div class="glass-panel p-6 bg-[#0F0F10]/50 text-left border-2 border-silver/30 shadow-2xl relative overflow-hidden rounded-2xl max-w-[360px] mx-auto">
                         <!-- Ornamen Siku Perak Internal -->
                         <div class="absolute top-2.5 left-2.5 w-3.5 h-3.5 border-t-2 border-l-2 border-silver/50"></div>
